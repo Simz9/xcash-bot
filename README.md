@@ -1,35 +1,72 @@
-# Xcash Hygen Telegram Bot
 
-## Files
-- `bot.py`: Telegram bot code.
-- `requirements.txt`: Python dependencies.
-- `.gitignore`: excludes local secrets and runtime files.
+# XCash Hygen Telegram Bot
 
-## Required environment variables
-- `TELEGRAM_BOT_TOKEN`: token from BotFather. Never commit the real token to GitHub.
-- `SUPPORT_CHAT_ID`: numeric Telegram chat ID for the support inbox (a staff account or a group).
-- `DATABASE_PATH` (optional): database file path; defaults to `bot_data.sqlite3`.
+بوت تيليجرام رسمي لخدمة عملاء برنامج XCash Hygen.
 
-## Commands
-Build/install command:
+## المميزات
+
+- قائمة رئيسية تفاعلية.
+- أسئلة شائعة مصنفة حسب الأقسام.
+- البحث عن الإجابات باستخدام مطابقة النصوص والعبارات البديلة.
+- معلومات البرنامج والتحميل والتفعيل.
+- روابط الموقع والشروحات.
+- استقبال رسائل وصور العملاء.
+- تحويل الرسائل إلى فريق الدعم الفني.
+- إمكانية رد موظف الدعم على العميل.
+- قاعدة بيانات SQLite لحفظ ربط رسائل الدعم بالعملاء.
+
+## ملفات المشروع
+
+- bot.py: الكود الرئيسي للبوت.
+- knowledge_base.json: قاعدة المعلومات والأسئلة والأجوبة.
+- requirements.txt: مكتبات Python المطلوبة.
+- .env.example: مثال لمتغيرات التشغيل.
+
+## متطلبات التشغيل
+
+- Python 3.10 أو أحدث.
+- حساب Telegram Bot عبر BotFather.
+- توكن البوت.
+- معرف محادثة الدعم الفني.
+
+## تثبيت المكتبات
+
 ```bash
 pip install -r requirements.txt
 ```
 
-Start command:
+## إعداد متغيرات البيئة
+
+يحتاج البوت إلى المتغيرين التاليين:
+
+BOT_TOKEN=ضع_توكن_البوت_هنا
+
+SUPPORT_CHAT_ID=ضع_معرف_محادثة_الدعم_هنا
+
+لا تضع التوكن داخل ملفات GitHub العامة.
+
+## التشغيل
+
+بعد ضبط متغيرات البيئة وتثبيت المكتبات:
+
 ```bash
 python bot.py
 ```
 
-## Configure support
-1. Set `SUPPORT_CHAT_ID` to the Telegram user ID or group chat ID where staff should receive customer messages.
-2. If using a group, add the bot to the group and ensure it can send messages.
-3. Staff must reply directly to the bot's customer notification or copied customer message. The bot copies the staff reply to the customer.
-4. Test with a separate Telegram account before public launch.
+## إعداد الدعم الفني
 
-## Important hosting note
-This bot uses long polling. Run only one active instance of it at a time; multiple polling instances using the same token can conflict.
-A host's free plan may sleep, restart, or not include always-on background workers. Verify the selected plan's current limits before relying on 24/7 operation.
+1. أنشئ مجموعة خاصة لفريق الدعم في Telegram.
+2. أضف البوت إلى المجموعة.
+3. امنح البوت صلاحية إرسال الرسائل.
+4. احصل على معرف المجموعة.
+5. ضع المعرف في متغير SUPPORT_CHAT_ID.
 
-## Before publishing
-Replace the example FAQ text in `FAQ_ANSWERS` inside `bot.py` with verified information about Xcash Hygen. Do not publish invented prices, payment instructions, or product claims.
+يمكن لموظف الدعم الرد على رسالة العميل باستخدام Reply داخل مجموعة الدعم.
+
+## الموقع الرسمي
+
+https://xcash-accounting.infinityfreeapp.com/
+
+## البريد الإلكتروني للدعم
+
+supportxcash@gmail.com
