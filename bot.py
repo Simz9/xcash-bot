@@ -10,7 +10,8 @@ from telegram.ext import (
 )
 
 # ضع توكن البوت الذي حصلت عليه من BotFather بين علامتي التنصيص أدناه
-TOKEN = "8969007205:AAHssel5HB0ffk5JOw4turIvc5JpQ8jQuPw"
+TOKEN = os.environ.get("BOT_TOKEN")
+
 
 # أوقات عمل فريق الدعم
 SUPPORT_HOURS = "من الساعة 9 صباحاً وحتى 5 مساءً (بتوقيت المحلي)"
