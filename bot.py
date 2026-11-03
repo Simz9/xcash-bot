@@ -9,14 +9,14 @@ from telegram.ext import (
     filters,
 )
 
-# ضع توكن البوت الذي حصلت عليه من BotFather بين علامتي التنصيص أدناه
+
 TOKEN = os.environ.get("BOT_TOKEN")
 
 
-# أوقات عمل فريق الدعم
+
 SUPPORT_HOURS = "من الساعة 9 صباحاً وحتى 5 مساءً (بتوقيت المحلي)"
 
-# قائمة البدء والأزرار التفاعلية
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("❓ الأسئلة الشائعة عن Xcash Hygen", callback_data="faq")],
