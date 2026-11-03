@@ -467,10 +467,11 @@ INTENT_LABELS = {
 }
 
 
+
 def detect_customer_intent(text):
     """
-    تحديد نية العميل اعتمادًا على العبارات والكلمات
-    مع استخدام التشابه النصي للمساعدة.
+    تحديد نية العميل باستخدام كلمات وعبارات واضحة.
+    تجنب تصنيف الجمل الإيجابية على أنها مشكلات.
     """
 
     normalized = normalize_text(text)
@@ -478,27 +479,114 @@ def detect_customer_intent(text):
     if not normalized:
         return None
 
-    best_intent = None
-    best_score = 0
+    # كلمات تدل على وجود مشكلة
+    problem_words = [
+        "مشكلة", "مشكلتي", "خطا", "خطأ", "لا يعمل",
+        "لا تعمل", "لا يشتغل", "لا تشتغل", "لا يطبع",
+        "لا تطبع", "متوقف", "تعطل", "عطل", "فشل",
+        "يرفض", "لا يقبل", "لا استطيع", "ما اقدر"
+    ]
 
-    for intent, patterns in INTENT_PATTERNS.items():
+    # كلمات تدل على حالة طبيعية
+    positive_words = [
+        "تعمل", "يعمل", "شغالة", "شغال",
+        "تشتغل", "يشتغل", "تطبع", "تمام"
+    ]
 
-        for pattern in patterns:
-            score = calculate_similarity(normalized, pattern)
+    # لا تعتبر الطابعة مشكلة إذا كانت تعمل بشكل طبيعي
+    if "طابع" in normalized:
+        has_problem = any(word in normalized for word in problem_words)
 
-            if score > best_score:
-                best_score = score
-                best_intent = intent
+        has_setup_request = any(word in normalized for word in [
+            "ربط", "اعداد", "اضافة", "توصيل",
+            "كيف", "طريقة", "جديدة", "شبكة", "usb"
+        ])
 
-    # لا نصنف الرسالة إذا كانت الثقة ضعيفة
-    if best_score < 0.48:
-        return None
+        has_positive = any(word in normalized for word in positive_words)
 
-    return {
-        "intent": best_intent,
-        "label": INTENT_LABELS[best_intent],
-        "confidence": round(best_score, 2),
+        if has_positive and not has_problem and not has_setup_request:
+            return None
+
+        if not has_problem and not has_setup_request:
+            return None
+
+    # عبارات طلب الدعم البشري
+    human_phrases = [
+        "اريد موظف", "اريد شخص", "تواصل مع الدعم",
+        "الدعم البشري", "موظف دعم", "اكلم الدعم",
+        "التحدث مع شخص", "اريد التواصل معكم"
+    ]
+
+    if any(phrase in normalized for phrase in human_phrases):
+        intent = "human_support"
+        return {
+            "intent": intent,
+            "label": INTENT_LABELS[intent],
+            "confidence": 1.0,
+        }
+
+    # ترتيب الأولوية للنيات
+    intent_keywords = {
+        "activation": [
+            "تفعيل", "التفعيل", "كود التفعيل",
+            "رمز التفعيل", "الترخيص", "مفتاح التفعيل"
+        ],
+
+        "purchase": [
+            "شراء", "اشتري", "السعر", "كم سعر",
+            "بكم", "الاشتراك", "الدفع", "شراء البرنامج"
+        ],
+
+        "installation": [
+            "تثبيت", "تنصيب", "تحميل البرنامج",
+            "تثبيت البرنامج", "تنصيب البرنامج"
+        ],
+
+        "printer": [
+            "طابعة", "الطابعة", "طباعة",
+            "لا يطبع", "لا تطبع", "ربط الطابعة",
+            "اعدادات الطابعة"
+        ],
+
+        "inventory": [
+            "المخزون", "الجرد", "كميات المنتجات",
+            "كمية المنتج", "حركة المخزون"
+        ],
+
+        "sales": [
+            "فاتورة بيع", "فواتير البيع",
+            "المبيعات", "عملية البيع"
+        ],
+
+        "reports": [
+            "التقارير", "تقرير المبيعات",
+            "الارباح", "تقرير الارباح",
+            "تصدير اكسل", "excel"
+        ],
+
+        "backup": [
+            "نسخة احتياطية", "النسخ الاحتياطي",
+            "استعادة النسخة", "استرجاع البيانات",
+            "نسخ البيانات"
+        ],
+
+        "technical_problem": [
+            "مشكلة", "خطا", "خطأ", "تعطل",
+            "لا يعمل", "لا يفتح", "يتوقف",
+            "يعلق", "لا استطيع", "ما اقدر"
+        ],
     }
+
+    for intent, keywords in intent_keywords.items():
+        for keyword in keywords:
+            if keyword in normalized:
+                return {
+                    "intent": intent,
+                    "label": INTENT_LABELS[intent],
+                    "confidence": 0.95,
+                }
+
+    return None
 
 
 def get_intent_response(intent):
@@ -1162,6 +1250,7 @@ async def forward_support_message(update, context, message):
         )
 
 
+
 # ==================================================
 # MESSAGE HANDLER
 # ==================================================
@@ -1232,6 +1321,7 @@ async def message_handler(update, context):
         text = message.text.strip()
         previous = get_conversation(user.id) if user else None
 
+        # 1. المحادثة الاجتماعية
         social = conversational_reply(text, previous)
 
         if social:
@@ -1246,6 +1336,7 @@ async def message_handler(update, context):
             )
             return
 
+        # 2. فهم الأسئلة المتتابعة
         followup = extract_followup_answer(text, previous)
 
         if followup:
@@ -1255,32 +1346,13 @@ async def message_handler(update, context):
             )
             return
 
-        match = find_best_answer(text)
-
-        if match and match["score"] >= 0.43:
-            answer = match["answer"]
-
-            if user:
-                save_conversation(
-                    user.id,
-                    match["category"],
-                    text,
-                    answer
-                )
-
-            await message.reply_text(
-                answer,
-                reply_markup=back_keyboard()
-            )
-            return
-
-        
-        # فهم نية العميل إذا لم نجد إجابة مباشرة
+        # 3. اكتشاف نية العميل قبل البحث العام
         detected = detect_customer_intent(text)
 
         if detected:
             intent = detected["intent"]
 
+            # طلب التواصل مع موظف
             if intent == "human_support":
                 await begin_support(update, context)
                 return
@@ -1302,20 +1374,41 @@ async def message_handler(update, context):
                 )
                 return
 
+        # 4. البحث في قاعدة المعرفة عند عدم اكتشاف نية واضحة
+        match = find_best_answer(text)
 
+        if match and match["score"] >= 0.43:
+            answer = match["answer"]
+
+            if user:
+                save_conversation(
+                    user.id,
+                    match["category"],
+                    text,
+                    answer
+                )
+
+            await message.reply_text(
+                answer,
+                reply_markup=back_keyboard()
+            )
+            return
+
+        # 5. إذا لم نفهم السؤال
         await message.reply_text(
-            "لم أتمكن من تحديد المقصود بدقة.\n\n"
-            "هل سؤالك عن استخدام البرنامج، أم الشراء والتفعيل، "
-            "أم مشكلة تقنية؟\n\n"
-            "يمكنك أيضًا اختيار مركز الدعم الفني.",
+            "لم أتمكن من فهم طلبك بدقة.\n\n"
+            "هل يمكنك توضيح ما الذي تريد فعله في XCash Hygen؟\n\n"
+            "يمكنك أيضًا اختيار أحد الأقسام أو التواصل مع الدعم الفني.",
             reply_markup=main_keyboard()
         )
         return
 
+    # الصور والملفات والفيديوهات
     if message.photo or message.document or message.video:
         await message.reply_text(
-            "إذا كانت الصورة أو الملف متعلقًا بمشكلة في البرنامج، "
-            "اختر مركز الدعم الفني لإرساله إلى فريق الدعم.",
+            "وصلتني رسالتك، لكن إذا كانت الصورة أو الملف متعلقًا "
+            "بمشكلة في البرنامج، اختر مركز الدعم الفني لإرساله "
+            "إلى فريق الدعم.",
             reply_markup=main_keyboard()
         )
         return
@@ -1324,7 +1417,6 @@ async def message_handler(update, context):
         "يمكنك كتابة سؤالك نصيًا أو اختيار أحد أقسام المساعدة.",
         reply_markup=main_keyboard()
     )
-
 
 # ==================================================
 # MAIN
